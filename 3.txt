@@ -1,0 +1,74 @@
+AIRCR 	equ 0x400000C8		
+IPR		equ 0x400000E0
+		area hw2,code,readonly
+		entry
+		
+		ldr sp,=0x400000A0
+		
+		bl groupnumber_write
+		
+		bl groupnumber_read
+		
+		ldr r0,=IPR
+		mov r2,#0xEF;interrupt priority register 11101111
+		strb r2,[r0]
+		
+		ldr r4,=0xFE;width
+		mov r2,#0
+		mov r5,#0x80
+loop	cmp r2,#8
+		beq out
+		tst r4,r5
+		beq out
+		add r2,#1;width
+		lsr r5,#1
+		b loop
+		
+		;subpriority=1110 1110=0xEE 
+		;grouppriority=1110 0000=0xE0
+out		;compute width
+		
+		bl Priority
+		
+stop	b stop
+groupnumber_write
+		stmib sp!,{r4,r5,r6,r7,r8,lr}
+		ldr r4,=AIRCR
+		ldr r5,=0x300;0x400=0100 0000 0000
+		str r5,[r4];set groupnumber at [10:8]
+		
+		ldmda sp!,{r4,r5,r6,r7,r8,pc}
+		
+groupnumber_read
+		stmib sp!,{r4,r5,r6,r7,r8,lr}
+		ldr r4,=AIRCR
+		ldr r3,[r4]
+		lsr r3,r3,#8
+		and r3,r3,#7;read groupnumber 3
+		
+		ldmda sp!,{r4,r5,r6,r7,r8,pc}
+		
+Priority
+		stmib sp!,{r4,r5,r6,r7,r8,lr}
+		;width,group number,ipr content
+		ldr r0,=IPR
+		ldrb r4,[r0]
+		ldr r5,=256
+		lsr r5,r2
+		sub r5,#1;clear unimplemented bits 
+		bic r1,r4,r5;sub priority 0x39->0x30 = 0011 0000
+		
+		ldrb r0,[r0]
+		ldr r6,=8
+		sub r6,r6,r2
+		cmp r3,r6;GN,8-Width who is bigger
+		lsrge r0,r3
+		lsrge r0,#1
+		lsrlt r0,r6
+		
+		lslge r0,r3
+		lslge r0,#1;group priority,0x39->0x20 = 0010 0000
+		lsllt r0,r6
+		
+		ldmda sp!,{r4,r5,r6,r7,r8,pc}
+		end

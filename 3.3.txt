@@ -1,0 +1,99 @@
+AIRCR 	equ 0x400000E0		
+IPR		equ 0x40000400
+		area hw2,code,readonly
+		entry
+		
+		ldr sp,=0x400000B0
+		
+		ldr r0,=IPR
+		mov r1,#0xF8;interrupt priority register
+		strb r1,[r0]
+		
+		ldr r0,=AIRCR
+		mov r1,#0xF8;interrupt priority register
+		strb r1,[r0]
+		
+		bl GW_PL
+		
+		bl GW_PR
+		
+		bl GW_NPL
+		
+		bl GW_NPR
+		
+stop	b stop
+
+		
+GW_PL
+		stmia sp!,{r4,r5,r6,r7,r8,r9,lr}
+		ldr r4,=AIRCR
+		ldr r6,[r4];width
+		
+		mov r3,#0
+		mov r8,#0x1
+loop2	cmp r3,#8
+		beq out2
+		tst r6,r8
+		bne out2
+		add r3,#1
+		lsl r8,#1
+		b loop2
+out2	;compute width
+		mov r9,#8
+		sub r3,r9,r3
+		
+		ldmdb sp!,{r4,r5,r6,r7,r8,r9,pc}
+
+GW_PR
+		stmia sp!,{r4,r5,r6,r7,r8,r9,lr}
+		ldr r4,=AIRCR
+		ldr r6,[r4];width
+		mov r4,#0
+		mov r8,#0x80
+loop1	cmp r4,#8
+		beq out1
+		tst r6,r8
+		beq out1
+		add r4,#1
+		lsr r8,#1
+		b loop1
+out1	;compute width
+		
+		ldmdb sp!,{r4,r5,r6,r7,r8,r9,pc}
+		
+GW_NPL	
+		stmia sp!,{r4,r5,r6,r7,r8,r9,lr}
+		ldr r4,=AIRCR
+		ldr r6,[r4];width
+		mov r5,#0
+		mov r8,#0x80
+loop4	cmp r5,#8
+		beq out4
+		tst r6,r8
+		beq out4
+		add r5,#1
+		lsl r6,#1
+		b loop4
+out4	;compute width
+		
+		ldmdb sp!,{r4,r5,r6,r7,r8,r9,pc}
+		
+GW_NPR
+		stmia sp!,{r4,r5,r6,r7,r8,r9,lr}
+		ldr r4,=AIRCR
+		ldr r7,[r4];width
+		mov r6,#0
+		mov r8,#0x1
+loop3	cmp r6,#8
+		beq out3
+		tst r7,r8
+		bne out3
+		add r6,#1
+		lsr r7,#1
+		b loop3
+out3	;compute width
+		mov r9,#8
+		sub r6,r9,r6
+		
+		ldmdb sp!,{r4,r5,r6,r7,r8,r9,pc}
+		end

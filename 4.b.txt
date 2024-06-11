@@ -1,0 +1,192 @@
+RAMSTART equ 0x40000020
+U0START	equ 0xE000C000
+PINSEL0 equ 0xE002C000
+LCR0 equ 0xC
+LSR0 equ 0x14	
+		area test,code,readonly
+		entry
+		
+		ldr	sp,=RAMSTART
+		bl	UARTConfig
+		;calculate the system clock frequency from the window of UART0
+		
+		ldr	r1,=IDStr;(a)
+loop1	;display reversely the string words
+		ldrb r0,[r1],#1
+		cmp	r0,#0
+		bne loop1
+		
+		sub r1,#2
+		ldr r2,=0
+		ldr r3,=35
+		ldr r7,=0x40000100
+loop1a	ldrb r0,[r1],#-1
+		add r2,#1
+		cmp r0,#0x20;SPACE
+		bleq Forward
+		cmp r0,#0x29;)
+		bleq Forward
+		cmp r0,#0x21;!
+		bleq Forward
+		cmp r0,#0x28;(
+		bleq Forward
+		cmp r0,#0x2D;-
+		bleq Forward
+		subs r3,#1
+		bne	loop1a
+		
+		add r1,#1
+		ldr r2,=6
+loop1b	
+		ldrb r0,[r1],#1
+		subs r2,#1
+		blne Transmit
+		bne	loop1b		
+		
+		ldr	r1,=IDStr;(b)
+loop2	;display reversely the string words
+		ldrb r0,[r1],#1
+		cmp	r0,#0
+		bne loop2
+		
+		sub r1,#2
+		ldr r3,=21
+loop2a	;display reversely the string words
+		ldrb r0,[r1],#-1
+		subs r3,#1
+		blne Transmit
+		bne loop2a	
+		
+		ldr r3,=4
+loop2b	;display reversely the string words
+		ldrb r0,[r1],#-1
+		subs r3,#1
+		blne Transmit
+		bne loop2b
+		
+		ldr r3,=5
+loop2c	;display reversely the string words
+		ldrb r0,[r1],#-1
+		subs r3,#1
+		blne Transmit
+		bne loop2c
+		
+		ldr r3,=6
+loop2d	;display reversely the string words
+		ldrb r0,[r1],#-1
+		subs r3,#1
+		blne Transmit
+		bne loop2d
+		
+		add r1,#2
+		
+		ldr r3,=6
+loop2e	;display reversely the string words
+		ldrb r0,[r1],#1
+		subs r3,#1
+		blne Transmit
+		bne loop2e
+		
+		ldr r3,=5
+loop2f	;display reversely the string words
+		ldrb r0,[r1],#1
+		subs r3,#1
+		blne Transmit
+		bne loop2f
+		
+		ldr r3,=4
+loop2g	;display reversely the string words
+		ldrb r0,[r1],#1
+		subs r3,#1
+		blne Transmit
+		bne loop2g
+		
+		ldr r3,=21
+loop2h	;display reversely the string words
+		ldrb r0,[r1],#1
+		subs r3,#1
+		blne Transmit
+		bne loop2h
+		
+		ldr r1,=0x400000A0
+		mov r9,#20
+loopr
+		bl Receive
+		strb r0,[r1],#1
+		subs r9,#1
+		bne loopr
+		
+stop	b	stop
+Transmit	
+		stmda sp!,{r5,r6,lr}
+		ldr	r5,=U0START
+wait1	
+		ldrb r6,[r5,#LSR0]
+		tst	r6,#0x20
+		beq	wait1
+		strb r0,[r5]
+		ldmib sp!,{r5,r6,pc}
+		
+Receive 
+		stmia sp!,{r5,r6,lr}
+		ldr	r5,=U0START
+wait2	
+		ldrb r6,[r5,#LSR0]
+		tst r6,#1
+		beq wait2
+		tst r6,#2
+		bne wait2
+		tst r6,#4
+		bne wait2
+		tst r6,#8
+		bne wait2
+		
+		ldmdb sp!,{r5,r6,pc}
+		
+UARTConfig
+		stmdb sp!,{r5,r6,lr}
+		
+		ldr	r5,=PINSEL0
+		ldr	r6,[r5]
+		bic	r6,#0xF
+		orr	r6,#0x5
+		str	r6,[r5]
+		
+		ldr	r6,[r5]
+		ldr	r5,=U0START
+		mov	r6,#0x9C
+		mov r6,#0x8B
+		strb r6,[r5,#LCR0]
+		mov	r6,#0xEA
+		mov r6,#0xF
+		strb r6,[r5]
+		mov	r6,#0x1C
+		mov r6,#0xB
+		strb r6,[r5,#LCR0]
+		
+		ldmia sp!,{r5,r6,pc}
+		
+Forward 
+		stmdb r7!,{r5,r6,lr}
+		mov r8,r2
+		cmp r2,#1
+		addeq r1,#1;one symbol
+		addne r1,#2;one symbol with character
+		
+loopf	
+		ldrb r0,[r1],#1
+		subs r8,#1
+		blne Transmit
+		bne loopf
+		
+		sub r1,r2;reduce to last character
+		cmp r2,#1
+		subne r1,#1;reduce one to symbol when one symbol
+		ldrb r0,[r1]
+		bl Transmit;one symbol trsnsmit
+		sub r1,#1;reduce to original place
+		ldr r2,=0;for next count
+		ldrb r0,[r1];avoid main loop wrong read
+		ldmia r7!,{r5,r6,pc}
+IDStr DCB "Final Exam for (411440273-AndyLai)!",0;34 35(0)
+		end
