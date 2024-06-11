@@ -1,0 +1,209 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000                 AREA             test2,code,readonly
+    2 00000000         
+    3 00000000         ;MOVW r0, #0xE000
+    4 00000000         ;MOVT r0, #0x400F
+    5 00000000 4825            ldr              r0,=0x400FE000
+    6 00000002         ;MOVW r2, #0x60 ; offset 0x060 for this register
+    7 00000002 F04F 0260       MOV              r2, #0x60
+    8 00000006         ;MOVW r1, #0x0540
+    9 00000006         ;MOVT r1, #0x01C0;r1=0x54001C0
+   10 00000006 4925            ldr              r1, =0x54001C0
+   11 00000008 5081            STR              r1, [r0, r2] ; write the regist
+                                                            er’s content base 0
+                                                            x400FE000->0x400FE0
+                                                            60
+   12 0000000A         
+   13 0000000A         ;MOVW r7, #0x604 ; enable timer0 - RCGCTIMER
+   14 0000000A F240 6704       ldr              r7, =0x604
+   15 0000000E         ;LDR r1, [r0, r7] ; p. 321, base ,0x400FE000->0x400FE604
+                       
+   16 0000000E F041 0101       ORR              r1, #0x1    ; offset - 0x604
+   17 00000012         ;STR r1, [r0, r7] ; bit 0
+   18 00000012         
+   19 00000012 BF00            NOP
+   20 00000014 BF00            NOP
+   21 00000016 BF00            NOP
+   22 00000018 BF00            NOP
+   23 0000001A BF00            NOP                          ; give myself 5 clo
+                                                            cks per spec
+   24 0000001C         
+   25 0000001C         ;MOVW r8, #0x0000 ; configure timer0 to be
+   26 0000001C         ;MOVT r8, #0x4000 ; one-shot, p.698 GPTMTnMR r8=0x400000
+                       00
+   27 0000001C F8DF 8080       ldr              r8,=0x40030000
+   28 00000020         ;MOVW r7, #0x4 ; base 0x40030000
+   29 00000020 F04F 0704       MOV              r7, #0x4
+   30 00000024         ;LDR r1, [r8, r7] ; offset 0x4,base 0x40030000->base 0x4
+                       0030004
+   31 00000024 F041 0121       ORR              r1, #0x21   ; bit 5 = 1, 1:0 = 
+                                                            0x1
+   32 00000028         ;STR r1, [r8, r7]
+   33 00000028         
+   34 00000028         ;LDR r1, [r8] ; set as 16-bit timer only
+   35 00000028 F041 0104       ORR              r1, #0x4    ; base 0x40030000
+   36 0000002C         ;STR r1, [r8] ; offset 0, bit[2:0] = 0x4
+   37 0000002C         
+   38 0000002C         ;MOVW r7, #0x30  ; set the match value at 0,
+   39 0000002C F04F 4880       ldr              r8,=0x40000000
+   40 00000030 F04F 0730       MOV              r7, #0x30
+   41 00000034 491B            ldr              r1, =0xFB87973F ; since we coun
+                                                            ting down, 0xFFFFFF
+                                                            FF-47868C0(5*15M)=m
+                                                            atchvalue
+   42 00000036 F848 1007       STR              r1, [r8, r7] ; offset - 0x30,ba
+                                                            se 0x40000000->base
+                                                             0x40000030
+   43 0000003A         
+   44 0000003A F8DF D06C       ldr              sp,=0x40000090
+   45 0000003E F000 F820       bl               Get_Match
+   46 00000042         
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   47 00000042         ;MOVW r7, #0x18 ; set bits in the GPTM
+   48 00000042 F8DF 805C       ldr              r8,=0x40030000
+   49 00000046 F04F 0718       MOV              r7, #0x18
+   50 0000004A F858 1007       LDR              r1, [r8, r7] ; Interrupt Mask R
+                                                            egister
+   51 0000004E F041 0110       ORR              r1, #0x10   ; p. 714 - base: 0x
+                                                            40030000
+   52 00000052 F848 1007       STR              r1, [r8, r7] ; offset - 0x18, b
+                                                            it 4,base 0x4003000
+                                                            0->base 0x40030018
+   53 00000056         
+   54 00000056         ;MOVW r6, #0xE000 ; enable interrupt on timer0
+   55 00000056         ;MOVT r6, #0xE000 ; p. 132, base 0xE000E000
+   56 00000056 F04F 26E0       ldr              r6,=0xE000E000
+   57 0000005A         ;MOVW r7, #0x100 ; offset - 0x100, bit 19
+   58 0000005A F44F 7780       MOV              r7, #0x100
+   59 0000005E 59F2            ldr              r2,[r6,r7]  ;read
+   60 00000060 F44F 2100       MOV              r1, #(1<<19) ; enable bit 19 fo
+                                                            r timer0
+   61 00000064 EA42 0201       orr              r2,r2,r1    ;modify
+   62 00000068 51F2            STR              r2, [r6, r7] ;base 0xE000E000->
+                                                            base 0xE008E000,wri
+                                                            te
+   63 0000006A         
+   64 0000006A         ;MOVW r6, #0x0000 ; start the timer
+   65 0000006A         ;MOVT r6, #0x4003;base 0x40030000
+   66 0000006A 4E0D            ldr              r6,=0x40030000
+   67 0000006C         ;MOVW r7, #0xC
+   68 0000006C F04F 070C       mov              r7,#0xC
+   69 00000070         ;LDR r1, [r6, r7];base 0x40030000-> 0x4003000C
+   70 00000070 F041 0101       ORR              r1, #0x1
+   71 00000074         ;STR r1, [r6, r7] ; go!!
+   72 00000074         
+   73 00000074 E7FE    Exit    B                Exit
+   74 00000076 E7FE    NmiISR  B                NmiISR
+   75 00000078 E7FE    FaultISR
+                               B                FaultISR
+   76 0000007A         IntDefaultHandler
+   77 0000007A         ;MOVW r10, #0xBEEF
+   78 0000007A         ;MOVT r10, #0xDEAD
+   79 0000007A F8DF A030       ldr              r10,=0xDEADBEEF
+   80 0000007E 4770            bx               lr
+   81 00000080         
+   82 00000080 E7FE    done    B                done
+   83 00000082         Get_Match
+   84 00000082 B50F            STMFD            sp!,{r0,r1,r2,r3,lr}
+   85 00000084         
+   86 00000084 490A            ldr              r1,=15000000
+   87 00000086 F04F 0005       ldr              r0,=5
+   88 0000008A F04F 33FF       ldr              r3,=0xFFFFFFFF
+   89 0000008E FB01 F200       mul              r2,r1,r0
+   90 00000092 EBA3 0202       sub              r2,r3,r2
+   91 00000096         
+   92 00000096 BD0F            LDMFD            sp!,{r0,r1,r2,r3,pc}
+   93 00000098                 ALIGN
+   94 00000098                 END
+              400FE000 
+              054001C0 
+              40030000 
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+              FB87973F 
+              40000090 
+              DEADBEEF 
+              00E4E1C0 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=.\objects\ex15.4.d -o.\objects\ex15.4.o -IC:\Keil_v5\ARM\RV31\I
+NC -IC:\Keil_v5\ARM\CMSIS\Include -IC:\Keil_v5\ARM\INC\TI\TM4C123 --predefine="
+__EVAL SETA 1" --predefine="__UVISION_VERSION SETA 528" --list=.\listings\ex15.
+4.lst EX15.4.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+Exit 00000074
+
+Symbol: Exit
+   Definitions
+      At line 73 in file EX15.4.s
+   Uses
+      At line 73 in file EX15.4.s
+Comment: Exit used once
+FaultISR 00000078
+
+Symbol: FaultISR
+   Definitions
+      At line 75 in file EX15.4.s
+   Uses
+      At line 75 in file EX15.4.s
+Comment: FaultISR used once
+Get_Match 00000082
+
+Symbol: Get_Match
+   Definitions
+      At line 83 in file EX15.4.s
+   Uses
+      At line 45 in file EX15.4.s
+Comment: Get_Match used once
+IntDefaultHandler 0000007A
+
+Symbol: IntDefaultHandler
+   Definitions
+      At line 76 in file EX15.4.s
+   Uses
+      None
+Comment: IntDefaultHandler unused
+NmiISR 00000076
+
+Symbol: NmiISR
+   Definitions
+      At line 74 in file EX15.4.s
+   Uses
+      At line 74 in file EX15.4.s
+Comment: NmiISR used once
+done 00000080
+
+Symbol: done
+   Definitions
+      At line 82 in file EX15.4.s
+   Uses
+      At line 82 in file EX15.4.s
+Comment: done used once
+test2 00000000
+
+Symbol: test2
+   Definitions
+      At line 1 in file EX15.4.s
+   Uses
+      None
+Comment: test2 unused
+7 symbols
+342 symbols in table

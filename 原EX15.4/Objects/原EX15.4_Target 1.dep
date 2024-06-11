@@ -1,0 +1,2 @@
+Dependencies for Project '原EX15.4', Target 'Target 1': (DO NOT MODIFY !)
+F (.\原EX15.4.s)(0x6667EBDE)(--cpu Cortex-M4.fp --pd "__EVAL SETA 1" -g --apcs=interwork -IC:\Keil_v5\ARM\RV31\INC-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\INC\TI\TM4C123--pd "__UVISION_VERSION SETA 528"--list .\listings\原ex15.4.lst --xref -o .\objects\原ex15.4.o --depend .\objects\原ex15.4.d)

@@ -1,0 +1,101 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000                 AREA             LED1, CODE, READONLY
+    2 00000000                 ENTRY
+    3 00000000         
+    4 00000000 E3A00101        LDR              r0, =0x40000000 ; CPU = Instruc
+                                                            tion Set
+    5 00000004         
+    6 00000004 E0477007        SUB              r7, r7, r7  ; clear out r7
+    7 00000008 E3A06002        MOV              r6, #2      ; start with LED = 
+                                                            0b10
+    8 0000000C         mainloop                             ; turn on the LED
+    9 0000000C         ; if bits [9:2] affect the writes, then the address
+   10 0000000C         ; is offset by 0x38
+   11 0000000C E5806038        STR              r6, [r0, #0x38] ; base + 0x38 s
+                                                            o [9:2] = 0b0011100
+                                                            0
+   12 00000010         
+   13 00000010         
+   14 00000010         ;BL   DELAY
+   15 00000010         
+   16 00000010         ;        LDR     r7, =0xF40000        ; set counter to 0
+                       xF40000
+   17 00000010         ;spin
+   18 00000010         ;        SUBS    r7, r7, #1
+   19 00000010         ;        BNE     spin
+   20 00000010         ; change colors
+   21 00000010         
+   22 00000010 E3560008        CMP              r6, #8
+   23 00000014                 ITE              LT
+   24 00000014 B1A06086        LSLLT            r6, r6, #1  ; LED = LED * 2
+   25 00000018 A3A06002        MOVGE            r6, #2      ; reset to 2 otherw
+                                                            ise
+   26 0000001C EAFFFFFA        B                mainloop
+   27 00000020         
+   28 00000020 E3A0773D 
+                       DELAY   LDR              r7, =0xF40000 ;set counter to 0
+                                                            xF40000
+   29 00000024         spin
+   30 00000024 E2577001        SUBS             r7, r7, #1
+   31 00000028 1AFFFFFD        BNE              spin
+   32 0000002C E12FFF1E        BX               LR
+   33 00000030 EAFFFFFE 
+                       STOP    B                STOP
+   34 00000034                 END
+Command Line: --debug --xref --diag_suppress=9931 --apcs=interwork --depend=.\o
+bjects\led.d -o.\objects\led.o -IC:\Keil_v5\ARM\RV31\INC -IC:\Keil_v5\ARM\CMSIS
+\Include -IC:\Keil_v5\ARM\INC\Philips --predefine="__EVAL SETA 1" --predefine="
+__UVISION_VERSION SETA 528" --list=.\listings\led.lst LED.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+DELAY 00000020
+
+Symbol: DELAY
+   Definitions
+      At line 28 in file LED.s
+   Uses
+      None
+Comment: DELAY unused
+LED1 00000000
+
+Symbol: LED1
+   Definitions
+      At line 1 in file LED.s
+   Uses
+      None
+Comment: LED1 unused
+STOP 00000030
+
+Symbol: STOP
+   Definitions
+      At line 33 in file LED.s
+   Uses
+      At line 33 in file LED.s
+Comment: STOP used once
+mainloop 0000000C
+
+Symbol: mainloop
+   Definitions
+      At line 8 in file LED.s
+   Uses
+      At line 26 in file LED.s
+Comment: mainloop used once
+spin 00000024
+
+Symbol: spin
+   Definitions
+      At line 29 in file LED.s
+   Uses
+      At line 31 in file LED.s
+Comment: spin used once
+5 symbols
+337 symbols in table
